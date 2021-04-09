@@ -1,0 +1,7 @@
+{
+  "C_Cpp.intelliSenseEngine": "Tag Parser",
+  "editor.formatOnSave": true,
+  "cmake.configureOnOpen": false,
+  "idf.port": "/dev/ttyUSB0",
+  "idf.flashBaudRate": "921600"
+}
