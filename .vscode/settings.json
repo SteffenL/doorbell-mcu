@@ -3,5 +3,9 @@
   "editor.formatOnSave": true,
   "cmake.configureOnOpen": false,
   "idf.port": "/dev/ttyUSB0",
-  "idf.flashBaudRate": "921600"
+  "idf.flashBaudRate": "921600",
+  "files.associations": {
+    "*.h": "c",
+    "*.c": "c"
+  }
 }
