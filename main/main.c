@@ -8,6 +8,7 @@
 #include <freertos/task.h>
 #include <nvs_flash.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifndef WIFI_SSID
 #error WIFI_SSID must be defined.
@@ -33,7 +34,6 @@ static EventGroupHandle_t wifiEventGroup;
 static esp_event_handler_instance_t anyWifiEventInstance;
 static esp_event_handler_instance_t gotIpEventInstance;
 static uint8_t wifiRetryCount = 0;
-RTC_DATA_ATTR int bootCount = 0;
 
 bool wakeTriggeredByPin(uint8_t pin) {
     return esp_sleep_get_ext1_wakeup_status() & (1ULL << pin);
@@ -66,11 +66,12 @@ void wifiEventHandler(
 }
 
 void initSleep(void) {
+    // Reduce deep sleep current
     ESP_ERROR_CHECK(
         esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF));
-    ESP_ERROR_CHECK(esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL));
-    // Reduce deep sleep current
     ESP_ERROR_CHECK(rtc_gpio_isolate(GPIO_NUM_12));
+
+    ESP_ERROR_CHECK(esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL));
     ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(MAX_WAKEUP_INTERVAL_IN_US));
     ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup(
         1 << RING_BUTTON_PIN, ESP_EXT1_WAKEUP_ANY_HIGH));
@@ -127,26 +128,67 @@ esp_err_t httpRequest(const char* url, esp_http_client_method_t method) {
     esp_err_t error = esp_http_client_perform(client);
 
     if (error == ESP_OK) {
-        int statusCode = esp_http_client_get_status_code(client);
-        int contentLength = esp_http_client_get_content_length(client);
-        printf("HTTP %d, %d bytes\n", statusCode, contentLength);
+        // int statusCode = esp_http_client_get_status_code(client);
+        // int contentLength = esp_http_client_get_content_length(client);
+        // TODO
     }
 
     ESP_ERROR_CHECK(esp_http_client_cleanup(client));
     return error;
 }
 
-esp_err_t sendRing(void) {
-    return httpRequest(SERVER_URL "/ring", HTTP_METHOD_POST);
+typedef void* (*AllocatorType)(size_t size);
+typedef void (*DeallocatorType)(void* memory);
+
+char* createUrl(const char* base, const char* path, AllocatorType allocator) {
+    const unsigned int baseLength = strlen(base);
+    const unsigned int pathLength = strlen(path);
+    const unsigned int urlLength = baseLength + pathLength;
+    const unsigned int urlBufferLength = urlLength + 1;
+
+    char* url = (char*)allocator(urlBufferLength);
+    assert(url);
+
+    memset(url, 0, urlBufferLength);
+    memcpy(url, base, baseLength);
+    memcpy(url + baseLength, path, pathLength);
+    url[urlLength] = 0;
+
+    return url;
 }
 
-esp_err_t sendPing(void) {
-    return httpRequest(SERVER_URL "/ping", HTTP_METHOD_POST);
+void freeUrl(const char* url, DeallocatorType deallocator) {
+    deallocator((void*)url);
 }
+
+typedef struct {
+    const char* serverUrl;
+} ApiClient;
+
+esp_err_t ApiClient_request(
+    ApiClient* client, const char* path, esp_http_client_method_t method) {
+    const char* url = createUrl(client->serverUrl, path, malloc);
+
+    if (!url) {
+        return ESP_ERR_NO_MEM;
+    }
+
+    esp_err_t error = httpRequest(url, method);
+    freeUrl(url, free);
+    return error;
+}
+
+esp_err_t ApiClient_ring(ApiClient* client) {
+    return ApiClient_request(client, "/ring", HTTP_METHOD_POST);
+}
+
+esp_err_t ApiClient_ping(ApiClient* client) {
+    return ApiClient_request(client, "/ping", HTTP_METHOD_POST);
+}
+
+ApiClient apiClient = {.serverUrl = SERVER_URL};
 
 void app_main(void) {
-    ++bootCount;
-
     esp_err_t error = nvs_flash_init();
     if (error == ESP_ERR_NVS_NO_FREE_PAGES ||
         error == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -166,9 +208,9 @@ void app_main(void) {
 
     if (bits & WIFI_CONNECTED_BIT) {
         if (wakeTriggeredByPin(RING_BUTTON_PIN)) {
-            sendRing();
+            ApiClient_ring(&apiClient);
         } else {
-            sendPing();
+            ApiClient_ping(&apiClient);
         }
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_ERROR_CHECK(
