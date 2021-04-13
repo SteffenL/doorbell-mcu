@@ -6,6 +6,9 @@
   "idf.flashBaudRate": "921600",
   "files.associations": {
     "*.h": "c",
-    "*.c": "c"
+    "*.c": "c",
+    "*.sh": "shellscript",
+    "*.md": "markdown",
+    "*.json": "json"
   }
 }
