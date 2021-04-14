@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "sleep.c" "flash.c" "api.c" "wifi.c" "main.c"
+    SRCS "tasks.c" "sleep.c" "flash.c" "api.c" "wifi.c" "main.c"
     INCLUDE_DIRS ""
 )
 
