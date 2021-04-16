@@ -1,4 +1,6 @@
+#include "adc.h"
 #include "api.h"
+#include "battery.h"
 #include "flash.h"
 #include "pin.h"
 #include "sleep.h"
@@ -11,7 +13,6 @@
 #include <esp_log.h>
 
 static ApiClientContext apiClientContext = {.serverUrl = SERVER_URL};
-static DeviceHealth deviceHealth = {.batteryLevel = 0, .batteryVoltage = 0};
 
 void setup(void) {
     esp_log_level_set("*", ESP_LOG_ERROR);
@@ -21,6 +22,7 @@ void setup(void) {
 
     initSleep(1 << RING_BUTTON_PIN);
     ESP_ERROR_CHECK(dac_cw_generator_enable());
+    initAdc();
     initWifi();
 
     if (flashStatus == NVS_FLASH_STATUS_ERASED) {
@@ -35,7 +37,7 @@ void loop(void) {
         if (wakeTriggeredByPin(RING_BUTTON_PIN)) {
             runRingTasks(&apiClientContext);
         } else {
-            ApiClient_ping(&apiClientContext, &deviceHealth);
+            runPingTask(&apiClientContext);
         }
     }
 

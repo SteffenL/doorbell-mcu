@@ -1,4 +1,5 @@
 #include "tasks.h"
+#include "battery.h"
 #include "pin.h"
 #include "sleep.h"
 
@@ -9,12 +10,19 @@
 
 #define RING_SOUND_COMPLETED_BIT BIT0
 #define RING_API_CALL_COMPLETED_BIT BIT1
+#define PING_COMPLETED_BIT BIT0
 
 typedef struct {
     EventGroupHandle_t group;
     int bit;
     ApiClientContext* apiClientContext;
 } RingTaskParam;
+
+typedef struct {
+    EventGroupHandle_t group;
+    int bit;
+    ApiClientContext* apiClientContext;
+} PingTaskParam;
 
 void ringSoundTask(RingTaskParam* parameter) {
     esp_err_t error = ESP_OK;
@@ -76,6 +84,21 @@ void ringApiCallTask(RingTaskParam* parameter) {
     vTaskDelete(NULL);
 }
 
+void pingTask(PingTaskParam* parameter) {
+    BatteryInfo batteryInfo;
+    getBatteryInfo(&batteryInfo);
+
+    DeviceHealth deviceHealth = {
+        .battery = {
+            .level = getBatteryLevelString(batteryInfo.level),
+            .voltage = batteryInfo.voltage}};
+
+    ApiClient_ping(parameter->apiClientContext, &deviceHealth);
+
+    xEventGroupSetBits(parameter->group, parameter->bit);
+    vTaskDelete(NULL);
+}
+
 void runRingTasks(ApiClientContext* apiClientContext) {
     EventGroupHandle_t ringTasksEventGroup = xEventGroupCreate();
 
@@ -103,4 +126,21 @@ void runRingTasks(ApiClientContext* apiClientContext) {
         portMAX_DELAY);
 
     vEventGroupDelete(ringTasksEventGroup);
+}
+
+void runPingTask(ApiClientContext* apiClientContext) {
+    EventGroupHandle_t pingTaskEventGroup = xEventGroupCreate();
+
+    PingTaskParam pingTaskParam = {
+        .group = pingTaskEventGroup,
+        .bit = PING_COMPLETED_BIT,
+        .apiClientContext = apiClientContext};
+
+    xTaskCreate(
+        (TaskFunction_t)pingTask, "Ping", 4096, &pingTaskParam, 1, NULL);
+
+    xEventGroupWaitBits(
+        pingTaskEventGroup, PING_COMPLETED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+
+    vEventGroupDelete(pingTaskEventGroup);
 }

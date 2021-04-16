@@ -1,4 +1,5 @@
 #include "api.h"
+#include "adc.h"
 
 #include <esp_http_client.h>
 #include <string.h>
@@ -116,12 +117,12 @@ esp_err_t ApiClient_ring(ApiClientContext* context) {
 }
 
 esp_err_t ApiClient_ping(ApiClientContext* context, DeviceHealth* health) {
-    const char* jsonFormat = "{\"battery\":{\"level\":%u,\"voltage\":%u}}";
+    const char* jsonFormat = "{\"battery\":{\"level\":\"%s\",\"voltage\":%u}}";
     char requestBody[1024];
     memset(requestBody, 0, sizeof(requestBody));
     int requestBodyLength = snprintf(
-        requestBody, sizeof(requestBody), jsonFormat, health->batteryLevel,
-        health->batteryVoltage);
+        requestBody, sizeof(requestBody), jsonFormat, health->battery.level,
+        health->battery.voltage);
     return ApiClient_request(
         context, "/ping", HTTP_METHOD_POST, requestBody, requestBodyLength);
 }

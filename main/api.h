@@ -4,8 +4,12 @@
 #include <stdint.h>
 
 typedef struct {
-    uint32_t batteryLevel;
-    uint32_t batteryVoltage;
+    const char* level;
+    uint32_t voltage;
+} BatteryHealth;
+
+typedef struct {
+    BatteryHealth battery;
 } DeviceHealth;
 
 typedef struct {
