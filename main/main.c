@@ -37,7 +37,7 @@ void loop(void) {
         if (wakeTriggeredByPin(RING_BUTTON_PIN)) {
             runRingTasks(&apiClientContext);
         } else {
-            runPingTask(&apiClientContext);
+            runHeartbeatTask(&apiClientContext);
         }
     }
 

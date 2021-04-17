@@ -22,4 +22,4 @@ typedef struct {
 } ApiClientContext;
 
 esp_err_t ApiClient_ring(ApiClientContext* context);
-esp_err_t ApiClient_ping(ApiClientContext* context, DeviceHealth* health);
+esp_err_t ApiClient_heartbeat(ApiClientContext* context, DeviceHealth* health);

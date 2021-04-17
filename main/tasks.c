@@ -15,7 +15,7 @@
 
 #define RING_SOUND_COMPLETED_BIT BIT0
 #define RING_API_CALL_COMPLETED_BIT BIT1
-#define PING_COMPLETED_BIT BIT0
+#define HEARTBEAT_COMPLETED_BIT BIT0
 
 typedef struct {
     EventGroupHandle_t group;
@@ -27,7 +27,7 @@ typedef struct {
     EventGroupHandle_t group;
     int bit;
     ApiClientContext* apiClientContext;
-} PingTaskParam;
+} HeartbeatTaskParam;
 
 void ringSoundTask(RingTaskParam* parameter) {
     esp_err_t error = ESP_OK;
@@ -89,7 +89,7 @@ void ringApiCallTask(RingTaskParam* parameter) {
     vTaskDelete(NULL);
 }
 
-void pingTask(PingTaskParam* parameter) {
+void heartbeatTask(HeartbeatTaskParam* parameter) {
     BatteryInfo batteryInfo;
     getBatteryInfo(&batteryInfo);
 
@@ -102,7 +102,7 @@ void pingTask(PingTaskParam* parameter) {
              .voltage = batteryInfo.voltage},
         .firmware = {.version = firmwareVersion}};
 
-    ApiClient_ping(parameter->apiClientContext, &deviceHealth);
+    ApiClient_heartbeat(parameter->apiClientContext, &deviceHealth);
 
     xEventGroupSetBits(parameter->group, parameter->bit);
     vTaskDelete(NULL);
@@ -137,20 +137,21 @@ void runRingTasks(ApiClientContext* apiClientContext) {
     vEventGroupDelete(ringTasksEventGroup);
 }
 
-void runPingTask(ApiClientContext* apiClientContext) {
-    EventGroupHandle_t pingTaskEventGroup = xEventGroupCreate();
+void runHeartbeatTask(ApiClientContext* apiClientContext) {
+    EventGroupHandle_t heartbeatTaskEventGroup = xEventGroupCreate();
 
-    PingTaskParam pingTaskParam = {
-        .group = pingTaskEventGroup,
-        .bit = PING_COMPLETED_BIT,
+    HeartbeatTaskParam heartbeatTaskParam = {
+        .group = heartbeatTaskEventGroup,
+        .bit = HEARTBEAT_COMPLETED_BIT,
         .apiClientContext = apiClientContext};
 
     xTaskCreate(
-        (TaskFunction_t)pingTask, "Ping", 4096, &pingTaskParam,
+        (TaskFunction_t)heartbeatTask, "Heartbeat", 4096, &heartbeatTaskParam,
         TASK_PRIORITY_MEDIUM, NULL);
 
     xEventGroupWaitBits(
-        pingTaskEventGroup, PING_COMPLETED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+        heartbeatTaskEventGroup, HEARTBEAT_COMPLETED_BIT, pdFALSE, pdTRUE,
+        portMAX_DELAY);
 
-    vEventGroupDelete(pingTaskEventGroup);
+    vEventGroupDelete(heartbeatTaskEventGroup);
 }
