@@ -8,6 +8,10 @@
 #include <esp_task.h>
 #include <freertos/event_groups.h>
 
+#define TASK_PRIORITY_HIGH 30
+#define TASK_PRIORITY_MEDIUM 20
+#define TASK_PRIORITY_LOW 10
+
 #define RING_SOUND_COMPLETED_BIT BIT0
 #define RING_API_CALL_COMPLETED_BIT BIT1
 #define PING_COMPLETED_BIT BIT0
@@ -114,11 +118,11 @@ void runRingTasks(ApiClientContext* apiClientContext) {
 
     xTaskCreate(
         (TaskFunction_t)ringSoundTask, "Ring Sound", 1024, &ringSoundTaskParam,
-        1, NULL);
+        TASK_PRIORITY_HIGH, NULL);
 
     xTaskCreate(
         (TaskFunction_t)ringApiCallTask, "Ring API Call", 2048,
-        &ringCallTaskParam, 1, NULL);
+        &ringCallTaskParam, TASK_PRIORITY_HIGH - 1, NULL);
 
     xEventGroupWaitBits(
         ringTasksEventGroup,
@@ -137,7 +141,8 @@ void runPingTask(ApiClientContext* apiClientContext) {
         .apiClientContext = apiClientContext};
 
     xTaskCreate(
-        (TaskFunction_t)pingTask, "Ping", 4096, &pingTaskParam, 1, NULL);
+        (TaskFunction_t)pingTask, "Ping", 4096, &pingTaskParam,
+        TASK_PRIORITY_MEDIUM, NULL);
 
     xEventGroupWaitBits(
         pingTaskEventGroup, PING_COMPLETED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
