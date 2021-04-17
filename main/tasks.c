@@ -1,5 +1,6 @@
 #include "tasks.h"
 #include "battery.h"
+#include "firmware.h"
 #include "pin.h"
 #include "sleep.h"
 
@@ -92,10 +93,14 @@ void pingTask(PingTaskParam* parameter) {
     BatteryInfo batteryInfo;
     getBatteryInfo(&batteryInfo);
 
+    char firmwareVersion[FIRMWARE_VERSION_MAX_LENGTH];
+    getFirmwareVersion(firmwareVersion, sizeof(firmwareVersion));
+
     DeviceHealth deviceHealth = {
-        .battery = {
-            .level = getBatteryLevelString(batteryInfo.level),
-            .voltage = batteryInfo.voltage}};
+        .battery =
+            {.level = getBatteryLevelString(batteryInfo.level),
+             .voltage = batteryInfo.voltage},
+        .firmware = {.version = firmwareVersion}};
 
     ApiClient_ping(parameter->apiClientContext, &deviceHealth);
 

@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "battery.c" "adc.c" "tasks.c" "sleep.c" "flash.c" "api.c" "wifi.c" "main.c"
+    SRCS "firmware.c" "battery.c" "adc.c" "tasks.c" "sleep.c" "flash.c" "api.c" "wifi.c" "main.c"
     INCLUDE_DIRS ""
 )
 

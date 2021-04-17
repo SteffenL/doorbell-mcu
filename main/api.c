@@ -117,12 +117,13 @@ esp_err_t ApiClient_ring(ApiClientContext* context) {
 }
 
 esp_err_t ApiClient_ping(ApiClientContext* context, DeviceHealth* health) {
-    const char* jsonFormat = "{\"battery\":{\"level\":\"%s\",\"voltage\":%u}}";
+    const char* jsonFormat = "{\"battery\":{\"level\":\"%s\",\"voltage\":%u},"
+                             "\"firmware\":{\"version\":\"%s\"}}";
     char requestBody[1024];
     memset(requestBody, 0, sizeof(requestBody));
     int requestBodyLength = snprintf(
         requestBody, sizeof(requestBody), jsonFormat, health->battery.level,
-        health->battery.voltage);
+        health->battery.voltage, health->firmware.version);
     return ApiClient_request(
         context, "/ping", HTTP_METHOD_POST, requestBody, requestBodyLength);
 }

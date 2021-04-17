@@ -9,7 +9,12 @@ typedef struct {
 } BatteryHealth;
 
 typedef struct {
+    const char* version;
+} FirmwareInfo;
+
+typedef struct {
     BatteryHealth battery;
+    FirmwareInfo firmware;
 } DeviceHealth;
 
 typedef struct {
