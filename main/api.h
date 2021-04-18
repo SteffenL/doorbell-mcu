@@ -17,9 +17,19 @@ typedef struct {
     FirmwareInfo firmware;
 } DeviceHealth;
 
+typedef void (*FirmwareUpdateAvailableCallback)(
+    const char* updateVersion, const char* updatePath, void* userData);
+
 typedef struct {
     const char* serverUrl;
 } ApiClientContext;
 
 esp_err_t ApiClient_ring(ApiClientContext* context);
-esp_err_t ApiClient_heartbeat(ApiClientContext* context, DeviceHealth* health);
+esp_err_t ApiClient_heartbeat(
+    ApiClientContext* context,
+    DeviceHealth* health,
+    FirmwareUpdateAvailableCallback firmwareUpdateAvailableCallback,
+    void* userData);
+esp_err_t ApiClient_url(
+    ApiClientContext* context, const char* path, char* url, size_t urlSize);
+const char* ApiClient_getServerCertificate();

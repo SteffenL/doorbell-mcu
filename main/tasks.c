@@ -89,6 +89,25 @@ void ringApiCallTask(RingTaskParam* parameter) {
     vTaskDelete(NULL);
 }
 
+void firmwareUpdateAvailableCallback(
+    const char* updateVersion, const char* updatePath, void* userData) {
+
+    const HeartbeatTaskParam* taskParam = (HeartbeatTaskParam*)userData;
+    char updateUrl[384] = {0};
+
+    esp_err_t error = ApiClient_url(
+        taskParam->apiClientContext, updatePath, updateUrl, sizeof(updateUrl));
+
+    if (error != ESP_OK) {
+        return;
+    }
+
+    updateUrl[sizeof(updateUrl) - 1] = 0;
+
+    printf("Firmware update %s available: %s\n", updateVersion, updateUrl);
+    applyFirmwareUpdate(updateUrl, true);
+}
+
 void heartbeatTask(HeartbeatTaskParam* parameter) {
     BatteryInfo batteryInfo;
     getBatteryInfo(&batteryInfo);
@@ -102,7 +121,9 @@ void heartbeatTask(HeartbeatTaskParam* parameter) {
              .voltage = batteryInfo.voltage},
         .firmware = {.version = firmwareVersion}};
 
-    ApiClient_heartbeat(parameter->apiClientContext, &deviceHealth);
+    ApiClient_heartbeat(
+        parameter->apiClientContext, &deviceHealth,
+        firmwareUpdateAvailableCallback, parameter);
 
     xEventGroupSetBits(parameter->group, parameter->bit);
     vTaskDelete(NULL);
@@ -146,7 +167,7 @@ void runHeartbeatTask(ApiClientContext* apiClientContext) {
         .apiClientContext = apiClientContext};
 
     xTaskCreate(
-        (TaskFunction_t)heartbeatTask, "Heartbeat", 4096, &heartbeatTaskParam,
+        (TaskFunction_t)heartbeatTask, "Heartbeat", 8192, &heartbeatTaskParam,
         TASK_PRIORITY_MEDIUM, NULL);
 
     xEventGroupWaitBits(

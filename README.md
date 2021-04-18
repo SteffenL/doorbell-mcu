@@ -2,6 +2,8 @@
 
 ## Building
 
+Put `server.cert.pem` into `certs/`.
+
 ```sh
 # Set WiFi network SSID and passphrase
 # Server is the full URL of the server, e.g. "https://myserver.local".
