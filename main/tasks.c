@@ -147,7 +147,7 @@ void runRingTasks(ApiClientContext* apiClientContext) {
         TASK_PRIORITY_HIGH, NULL);
 
     xTaskCreate(
-        (TaskFunction_t)ringApiCallTask, "Ring API Call", 2048,
+        (TaskFunction_t)ringApiCallTask, "Ring API Call", 4096,
         &ringCallTaskParam, TASK_PRIORITY_HIGH - 1, NULL);
 
     xEventGroupWaitBits(
