@@ -1,6 +1,7 @@
 #include "adc.h"
 #include "api.h"
 #include "battery.h"
+#include "debug.h"
 #include "flash.h"
 #include "pin.h"
 #include "sleep.h"
@@ -15,7 +16,8 @@
 static ApiClientContext apiClientContext = {.serverUrl = SERVER_URL};
 
 void setup(void) {
-    esp_log_level_set("*", ESP_LOG_ERROR);
+    esp_log_level_t logLevel = isDebugEnabled() ? ESP_LOG_DEBUG : ESP_LOG_ERROR;
+    esp_log_level_set("*", logLevel);
 
     NvsFlashStatus flashStatus = initFlash();
     ESP_ERROR_CHECK(esp_event_loop_create_default());
