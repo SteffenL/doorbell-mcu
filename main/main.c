@@ -37,11 +37,12 @@ void loop(void) {
         if (wakeTriggeredByPin(RING_BUTTON_PIN)) {
             runRingTasks(&apiClientContext);
         } else {
-            runHeartbeatTask(&apiClientContext);
+            runHeartbeatTask(&apiClientContext, false);
         }
     }
 
     stopWifi();
+    handleOnDemandHeartbeatSequence(&apiClientContext);
     sleepNow();
 }
 

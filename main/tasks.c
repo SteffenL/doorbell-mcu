@@ -3,10 +3,12 @@
 #include "firmware.h"
 #include "pin.h"
 #include "sleep.h"
+#include "wifi.h"
 
 #include <driver/dac.h>
 #include <esp_event.h>
 #include <esp_task.h>
+#include <esp_timer.h>
 #include <freertos/event_groups.h>
 
 #define TASK_PRIORITY_HIGH 30
@@ -27,54 +29,32 @@ typedef struct {
     EventGroupHandle_t group;
     int bit;
     ApiClientContext* apiClientContext;
+    bool applyFirmwareUpdate;
+    bool restartAfterFirmwareUpdate;
 } HeartbeatTaskParam;
 
+void buzz(
+    adc_channel_t channel,
+    uint32_t frequency,
+    int8_t offset,
+    uint32_t durationInMs) {
+
+    dac_cw_config_t cwConfig = {
+        .en_ch = channel,
+        .scale = DAC_CW_SCALE_1,
+        .phase = DAC_CW_PHASE_0,
+        .freq = frequency,
+        .offset = offset};
+
+    ESP_ERROR_CHECK(dac_cw_generator_config(&cwConfig));
+    ESP_ERROR_CHECK(dac_output_enable(channel));
+    delayMs(durationInMs);
+    ESP_ERROR_CHECK(dac_output_disable(channel));
+}
+
 void ringSoundTask(RingTaskParam* parameter) {
-    esp_err_t error = ESP_OK;
-
-    do {
-        dac_cw_config_t cwConfig1 = {
-            .en_ch = BUZZER_DAC_CNANNEL,
-            .scale = DAC_CW_SCALE_1,
-            .phase = DAC_CW_PHASE_0,
-            .freq = 2500,
-            .offset = 0};
-
-        if ((error = dac_cw_generator_config(&cwConfig1)) != ESP_OK) {
-            break;
-        }
-
-        if ((error = dac_output_enable(BUZZER_DAC_CNANNEL)) != ESP_OK) {
-            break;
-        }
-
-        delayMs(500);
-
-        if ((error = dac_output_disable(BUZZER_DAC_CNANNEL)) != ESP_OK) {
-            break;
-        }
-
-        dac_cw_config_t cwConfig2 = {
-            .en_ch = BUZZER_DAC_CNANNEL,
-            .scale = DAC_CW_SCALE_1,
-            .phase = DAC_CW_PHASE_0,
-            .freq = 2000,
-            .offset = 0};
-
-        if ((error = dac_cw_generator_config(&cwConfig2)) != ESP_OK) {
-            break;
-        }
-
-        if ((error = dac_output_enable(BUZZER_DAC_CNANNEL)) != ESP_OK) {
-            break;
-        }
-
-        delayMs(1000);
-
-        if ((error = dac_output_disable(BUZZER_DAC_CNANNEL)) != ESP_OK) {
-            break;
-        }
-    } while (0);
+    buzz(BUZZER_DAC_CNANNEL, 2500, 63, 500);
+    buzz(BUZZER_DAC_CNANNEL, 2500, 63, 1000);
 
     // TODO: report error
 
@@ -104,8 +84,9 @@ void firmwareUpdateAvailableCallback(
 
     updateUrl[sizeof(updateUrl) - 1] = 0;
 
-    printf("Firmware update %s available: %s\n", updateVersion, updateUrl);
-    applyFirmwareUpdate(updateUrl, true);
+    if (taskParam->applyFirmwareUpdate) {
+        applyFirmwareUpdate(updateUrl, taskParam->restartAfterFirmwareUpdate);
+    }
 }
 
 void heartbeatTask(HeartbeatTaskParam* parameter) {
@@ -158,13 +139,16 @@ void runRingTasks(ApiClientContext* apiClientContext) {
     vEventGroupDelete(ringTasksEventGroup);
 }
 
-void runHeartbeatTask(ApiClientContext* apiClientContext) {
+void runHeartbeatTask(
+    ApiClientContext* apiClientContext, bool applyFirmwareUpdate) {
     EventGroupHandle_t heartbeatTaskEventGroup = xEventGroupCreate();
 
     HeartbeatTaskParam heartbeatTaskParam = {
         .group = heartbeatTaskEventGroup,
         .bit = HEARTBEAT_COMPLETED_BIT,
-        .apiClientContext = apiClientContext};
+        .apiClientContext = apiClientContext,
+        .applyFirmwareUpdate = applyFirmwareUpdate,
+        .restartAfterFirmwareUpdate = true};
 
     xTaskCreate(
         (TaskFunction_t)heartbeatTask, "Heartbeat", 8192, &heartbeatTaskParam,
@@ -175,4 +159,65 @@ void runHeartbeatTask(ApiClientContext* apiClientContext) {
         portMAX_DELAY);
 
     vEventGroupDelete(heartbeatTaskEventGroup);
+}
+
+void handleOnDemandHeartbeatSequence(ApiClientContext* apiClientContext) {
+    // Handle secret ring button sequence to initiate hearbeat.
+    // Useful for triggering firmware updates.
+
+    if (!wakeTriggeredByPin(RING_BUTTON_PIN) ||
+        gpio_get_level(RING_BUTTON_PIN) == 0) {
+        return;
+    }
+
+    ESP_ERROR_CHECK(gpio_set_direction(BUZZER_PIN, GPIO_MODE_OUTPUT));
+    bool cancel = false;
+    int64_t startTime = esp_timer_get_time();
+
+    // Button must be pressed for 5 seconds
+    while (esp_timer_get_time() - startTime < 5000 * 1000) {
+        if (gpio_get_level(RING_BUTTON_PIN) == 0) {
+            cancel = true;
+        } else {
+            delayMs(10);
+        }
+    }
+
+    if (cancel) {
+        return;
+    }
+
+    buzz(BUZZER_DAC_CNANNEL, 2500, 63, 50);
+
+    // Button must be pressed for 5 times within the next 5 seconds
+    int buttonState = gpio_get_level(RING_BUTTON_PIN);
+    startTime = esp_timer_get_time();
+    int buttonPressCount = 0;
+
+    while (esp_timer_get_time() - startTime < 5000 * 1000 &&
+           buttonPressCount < 5) {
+        if (buttonState == 0 && gpio_get_level(RING_BUTTON_PIN) == 1) {
+            buttonState = 1;
+            ++buttonPressCount;
+        } else if (buttonState == 1 && gpio_get_level(RING_BUTTON_PIN) == 0) {
+            buttonState = 0;
+        }
+
+        delayMs(10);
+    }
+
+    if (buttonPressCount >= 5) {
+        for (int i = 0; i < 2; ++i) {
+            buzz(BUZZER_DAC_CNANNEL, 2500, 63, 50);
+            delayMs(100);
+        }
+
+        startWifi();
+
+        if (waitForWifiConnection() == WIFI_WAIT_RESULT_OK) {
+            runHeartbeatTask(apiClientContext, true);
+        }
+
+        stopWifi();
+    }
 }
