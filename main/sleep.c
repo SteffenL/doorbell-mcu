@@ -1,10 +1,12 @@
 #include "sleep.h"
+#include "log.h"
 
 #include <driver/rtc_io.h>
 #include <esp_sleep.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#define TAG "sleep"
 #define MAX_WAKEUP_INTERVAL_IN_US 6 * 60 * 60 * 1000000LL
 
 void delayMs(uint32_t time) { vTaskDelay(time / portTICK_PERIOD_MS); }
@@ -25,4 +27,11 @@ bool wakeTriggeredByPin(uint8_t pin) {
     return esp_sleep_get_ext1_wakeup_status() & (1ULL << pin);
 }
 
-void sleepNow(void) { ESP_ERROR_CHECK(esp_light_sleep_start()); }
+void lightSleepNow(void) {
+    LOGD(TAG, "Entering light sleep");
+    ESP_ERROR_CHECK(esp_light_sleep_start());
+}
+void deepSleepNow(void) {
+    LOGD(TAG, "Entering deep sleep");
+    esp_deep_sleep_start();
+}

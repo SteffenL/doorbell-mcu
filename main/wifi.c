@@ -5,14 +5,6 @@
 #include <esp_wifi.h>
 #include <freertos/event_groups.h>
 
-#ifndef WIFI_SSID
-#error WIFI_SSID must be defined.
-#endif
-
-#ifndef WIFI_PASSPHRASE
-#error WIFI_PASSPHRASE must be defined.
-#endif
-
 #define WIFI_MAX_RETRY 2
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
@@ -48,6 +40,20 @@ void wifiEventHandler(
     }
 }
 
+void setWifiConfig(void) {
+    wifi_config_t wifiConfig;
+    ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &wifiConfig));
+
+    wifiConfig.sta.scan_method = WIFI_FAST_SCAN;
+    wifiConfig.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+    wifiConfig.sta.threshold.rssi = -127;
+    wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wifiConfig.sta.pmf_cfg.capable = true;
+    wifiConfig.sta.pmf_cfg.required = true;
+
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifiConfig));
+}
+
 void initWifi(void) {
     if (!wifiEventGroup) {
         wifiEventGroup = xEventGroupCreate();
@@ -58,21 +64,8 @@ void initWifi(void) {
 
     wifi_init_config_t wifiInitConfig = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&wifiInitConfig));
-
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-}
-
-void setWifiConfig(void) {
-    wifi_config_t wifiConfig = {
-        .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASSPHRASE,
-            .scan_method = WIFI_FAST_SCAN,
-            .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-            .threshold = {.rssi = -127, .authmode = WIFI_AUTH_WPA2_PSK},
-            .pmf_cfg = {.capable = true, .required = true}}};
-
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifiConfig));
+    setWifiConfig();
 }
 
 void deinitWifi(void) {
@@ -113,8 +106,14 @@ void stopWifi(void) {
         anyWifiEventInstance = NULL;
     }
 
-    ESP_ERROR_CHECK(esp_wifi_disconnect());
+    esp_err_t error = esp_wifi_disconnect();
+
+    if (error != ESP_ERR_WIFI_NOT_STARTED) {
+        ESP_ERROR_CHECK(error);
+    }
+
     ESP_ERROR_CHECK(esp_wifi_stop());
+
     adc_power_off();
 }
 

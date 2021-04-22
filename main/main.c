@@ -1,9 +1,10 @@
 #include "adc.h"
 #include "api.h"
 #include "battery.h"
-#include "debug.h"
 #include "flash.h"
+#include "log.h"
 #include "pin.h"
+#include "provisioning.h"
 #include "sleep.h"
 #include "tasks.h"
 #include "wifi.h"
@@ -11,25 +12,22 @@
 #include <driver/dac.h>
 #include <esp_err.h>
 #include <esp_event.h>
-#include <esp_log.h>
 
 static ApiClientContext apiClientContext = {.serverUrl = SERVER_URL};
 
-void setup(void) {
-    esp_log_level_t logLevel = isDebugEnabled() ? ESP_LOG_DEBUG : ESP_LOG_ERROR;
-    esp_log_level_set("*", logLevel);
+#define SETUP_TAG "setup"
 
+void setup(void) {
     NvsFlashStatus flashStatus = initFlash();
+    LOGD(SETUP_TAG, "NVS flash status: %d", flashStatus);
+
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     initSleep(1 << RING_BUTTON_PIN);
     ESP_ERROR_CHECK(dac_cw_generator_enable());
     initAdc();
     initWifi();
-
-    if (flashStatus == NVS_FLASH_STATUS_ERASED) {
-        setWifiConfig();
-    }
+    runFirstTimeProvisioning();
 }
 
 void loop(void) {
@@ -45,7 +43,7 @@ void loop(void) {
 
     stopWifi();
     handleOnDemandHeartbeatSequence(&apiClientContext);
-    sleepNow();
+    lightSleepNow();
 }
 
 void app_main(void) {
