@@ -54,7 +54,7 @@ void buzz(
 
 void ringSoundTask(RingTaskParam* parameter) {
     buzz(BUZZER_DAC_CNANNEL, 2500, 63, 500);
-    buzz(BUZZER_DAC_CNANNEL, 2500, 63, 1000);
+    buzz(BUZZER_DAC_CNANNEL, 2000, 63, 1000);
 
     // TODO: report error
 
