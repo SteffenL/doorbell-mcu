@@ -4,10 +4,6 @@
 #include <esp_http_client.h>
 #include <string.h>
 
-#ifndef SERVER_URL
-#error SERVER_URL must be defined.
-#endif
-
 static const int HTTP_TIMEOUT_IN_MS = 5000;
 // static const int HTTP_MAX_CONTENT_LENGTH = 65536;
 static const char* API_CONTENT_TYPE = "application/flatmap";

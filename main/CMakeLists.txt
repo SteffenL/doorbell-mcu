@@ -3,10 +3,3 @@ idf_component_register(
     INCLUDE_DIRS ""
     EMBED_TXTFILES "${project_dir}/certs/server.cert.pem"
 )
-
-set(SERVER_URL "" CACHE STRING "Server URL")
-
-target_compile_options(${COMPONENT_LIB} PRIVATE
-    "-DSERVER_URL=\"${SERVER_URL}\""
-)
-

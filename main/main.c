@@ -13,7 +13,8 @@
 #include <esp_err.h>
 #include <esp_event.h>
 
-static ApiClientContext apiClientContext = {.serverUrl = SERVER_URL};
+static ApiClientContext apiClientContext = {
+    .serverUrl = DEFAULT_API_SERVER_URL};
 
 #define SETUP_TAG "setup"
 

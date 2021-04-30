@@ -3,6 +3,8 @@
 #include <esp_err.h>
 #include <stdint.h>
 
+#define DEFAULT_API_SERVER_URL "https://doorbell-server.local"
+
 typedef struct {
     const char* level;
     uint32_t voltage;
