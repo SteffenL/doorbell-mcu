@@ -31,7 +31,6 @@ esp_err_t httpRequest(
     config.timeout_ms = HTTP_TIMEOUT_IN_MS;
     config.event_handler = httpEventHandler;
     config.user_data = NULL;
-    config.skip_cert_common_name_check = true;
     config.cert_pem = (const char*)serverCertPemStart;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
