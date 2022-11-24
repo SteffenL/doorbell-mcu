@@ -4,13 +4,6 @@
 
 Put `server.cert.pem` into `certs/`.
 
-```sh
-# Run one or more commands: clean, build, flash, monitor
-scripts/idf.sh [command...]
-```
-
-### Docker Build
-
 ```
 docker build -t esp-idf .
 docker volume create doorbell-mcu-source
