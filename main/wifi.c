@@ -3,6 +3,7 @@
 
 #include <driver/adc.h>
 #include <esp_event.h>
+#include <esp_timer.h>
 #include <esp_wifi.h>
 #include <freertos/event_groups.h>
 
@@ -125,9 +126,15 @@ void stopWifi(void) {
 }
 
 WifiWaitResult waitForWifiConnection(void) {
+    int64_t t1 = esp_timer_get_time();
     EventBits_t bits = xEventGroupWaitBits(
         wifiEventGroup, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdTRUE, pdFALSE,
         portMAX_DELAY);
-    return (bits & WIFI_CONNECTED_BIT) ? WIFI_WAIT_RESULT_OK
-                                       : WIFI_WAIT_RESULT_FAIL;
+    bool result = (bits & WIFI_CONNECTED_BIT) ? WIFI_WAIT_RESULT_OK
+                                              : WIFI_WAIT_RESULT_FAIL;
+    if (result == WIFI_WAIT_RESULT_OK) {
+        int64_t t2 = (esp_timer_get_time() - t1) / 1000;
+        LOGD(LOG_TAG, "WiFi connected after %lld ms", t2);
+    }
+    return result;
 }
