@@ -1,5 +1,5 @@
 FROM ubuntu:20.04
-ARG SDK_VERSION=4.2
+ARG SDK_VERSION=4.2.4
 # https://docs.espressif.com/projects/esp-idf/en/v4.2/esp32/get-started/linux-setup.html
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
