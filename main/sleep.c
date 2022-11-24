@@ -2,6 +2,7 @@
 #include "log.h"
 
 #include <driver/rtc_io.h>
+#include <driver/uart.h>
 #include <esp_sleep.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -30,6 +31,8 @@ bool wakeTriggeredByPin(uint8_t pin) {
 
 void lightSleepNow(void) {
     LOGD(LOG_TAG, "Entering light sleep");
+    // Flush UART TX FIFO before entering light sleep
+    uart_wait_tx_idle_polling(CONFIG_ESP_CONSOLE_UART_NUM);
     ESP_ERROR_CHECK(esp_light_sleep_start());
 }
 void deepSleepNow(void) {
