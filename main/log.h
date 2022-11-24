@@ -4,7 +4,7 @@
 
 #define LOG_TAG_PREFIX "doorbell_"
 
-#define LOG_TAG(s) LOG_TAG_PREFIX s
+#define MAKE_LOG_TAG(s) LOG_TAG_PREFIX s
 
 #define LOG_LEVEL_E ESP_LOG_ERROR
 #define LOG_LEVEL_W ESP_LOG_WARN
@@ -15,9 +15,9 @@
 #define LOG(levelLetter, tag, format, ...)                                     \
     {                                                                          \
         esp_log_write(                                                         \
-            LOG_LEVEL_##levelLetter, LOG_TAG(tag),                             \
+            LOG_LEVEL_##levelLetter, MAKE_LOG_TAG(tag),                        \
             LOG_FORMAT(levelLetter, format), esp_log_timestamp(),              \
-            LOG_TAG(tag), ##__VA_ARGS__);                                      \
+            MAKE_LOG_TAG(tag), ##__VA_ARGS__);                                 \
     }
 
 #define LOGE(tag, format, ...) LOG(E, tag, format, ##__VA_ARGS__)

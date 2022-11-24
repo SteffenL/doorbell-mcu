@@ -1,8 +1,11 @@
 #include "api.h"
 #include "adc.h"
+#include "log.h"
 
 #include <esp_http_client.h>
 #include <string.h>
+
+#define LOG_TAG "api"
 
 static const int HTTP_TIMEOUT_IN_MS = 5000;
 // static const int HTTP_MAX_CONTENT_LENGTH = 65536;
@@ -67,6 +70,8 @@ esp_err_t httpRequest(
                 *responseBodyBytesRead = bytesRead;
             }
         }
+    } else {
+        LOGE(LOG_TAG, "HTTP request to %s failed.", url);
     }
 
     ESP_ERROR_CHECK(esp_http_client_cleanup(client));

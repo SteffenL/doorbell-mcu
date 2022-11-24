@@ -16,11 +16,11 @@
 static ApiClientContext apiClientContext = {
     .serverUrl = DEFAULT_API_SERVER_URL};
 
-#define SETUP_TAG "setup"
+#define LOG_TAG  "main"
 
 void setup(void) {
     NvsFlashStatus flashStatus = initFlash();
-    LOGD(SETUP_TAG, "NVS flash status: %d", flashStatus);
+    LOGD(LOG_TAG, "NVS flash status: %d", flashStatus);
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -40,6 +40,8 @@ void loop(void) {
         } else {
             runHeartbeatTask(&apiClientContext, false);
         }
+    } else {
+        LOGE(LOG_TAG, "Cannot run tasks because there is no WiFi connection.");
     }
 
     stopWifi();

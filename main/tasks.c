@@ -1,6 +1,7 @@
 #include "tasks.h"
 #include "battery.h"
 #include "firmware.h"
+#include "log.h"
 #include "pin.h"
 #include "sleep.h"
 #include "wifi.h"
@@ -10,6 +11,8 @@
 #include <esp_task.h>
 #include <esp_timer.h>
 #include <freertos/event_groups.h>
+
+#define LOG_TAG "tasks"
 
 #define TASK_PRIORITY_HIGH 30
 #define TASK_PRIORITY_MEDIUM 20
@@ -216,6 +219,8 @@ void handleOnDemandHeartbeatSequence(ApiClientContext* apiClientContext) {
 
         if (waitForWifiConnection() == WIFI_WAIT_RESULT_OK) {
             runHeartbeatTask(apiClientContext, true);
+        } else {
+            LOGE(LOG_TAG, "Unable to get a WiFi connection.");
         }
 
         stopWifi();
