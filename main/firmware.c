@@ -30,6 +30,7 @@ esp_err_t applyFirmwareUpdate(const char* url, bool restart) {
     config.timeout_ms = HTTP_TIMEOUT_IN_MS;
     config.event_handler = firmwareHttpEventHandler;
     config.user_data = NULL;
+    // TODO: Should be set to false in production code
     config.skip_cert_common_name_check = true;
     config.cert_pem = ApiClient_getServerCertificate();
 

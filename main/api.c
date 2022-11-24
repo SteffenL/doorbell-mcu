@@ -32,6 +32,8 @@ esp_err_t httpRequest(
     config.event_handler = httpEventHandler;
     config.user_data = NULL;
     config.cert_pem = (const char*)serverCertPemStart;
+    // TODO: Should be set to false in production code
+    config.skip_cert_common_name_check = true;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
