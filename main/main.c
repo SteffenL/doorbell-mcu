@@ -32,10 +32,11 @@ void setup(void) {
 }
 
 void loop(void) {
+    bool wokenByRingButton = wakeTriggeredByPin(RING_BUTTON_PIN);
     startWifi();
 
     if (waitForWifiConnection() == WIFI_WAIT_RESULT_OK) {
-        if (wakeTriggeredByPin(RING_BUTTON_PIN)) {
+        if (wokenByRingButton) {
             runRingTasks(&apiClientContext);
         } else {
             runHeartbeatTask(&apiClientContext, false);
