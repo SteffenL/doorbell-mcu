@@ -1,6 +1,7 @@
 #include "api.h"
 #include "adc.h"
 #include "log.h"
+#include "sleep.h"
 
 #include <esp_http_client.h>
 #include <string.h>
@@ -35,6 +36,7 @@ esp_err_t httpRequest(
     config.event_handler = httpEventHandler;
     config.user_data = NULL;
     config.cert_pem = (const char*)serverCertPemStart;
+    config.is_async = true;
     // TODO: Should be set to false in production code
     config.skip_cert_common_name_check = true;
 
@@ -50,9 +52,13 @@ esp_err_t httpRequest(
             client, requestContent, requestContentLength));
     }
 
-    esp_err_t error = ESP_FAIL;
+    esp_err_t error = ESP_ERR_HTTP_EAGAIN;
 
-    error = esp_http_client_perform(client);
+    yield();
+    while (error == ESP_ERR_HTTP_EAGAIN) {
+        error = esp_http_client_perform(client);
+        yield();
+    }
 
     if (error == ESP_OK) {
         int statusCode = esp_http_client_get_status_code(client);
