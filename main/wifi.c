@@ -1,18 +1,20 @@
 #include "wifi.h"
+#include "log.h"
 
 #include <driver/adc.h>
 #include <esp_event.h>
 #include <esp_wifi.h>
 #include <freertos/event_groups.h>
 
-#define WIFI_MAX_RETRY 2
+#define LOG_TAG "wifi"
+#define WIFI_MAX_TRIES 5
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 
 static EventGroupHandle_t wifiEventGroup = NULL;
 static esp_event_handler_instance_t anyWifiEventInstance = NULL;
 static esp_event_handler_instance_t gotIpEventInstance = NULL;
-static uint8_t wifiRetryCount = 0;
+static uint8_t wifiConnectAttempts = 0;
 
 void wifiEventHandler(
     void* event_handler_arg,
@@ -22,20 +24,25 @@ void wifiEventHandler(
 
     if (event_base == WIFI_EVENT) {
         if (event_id == WIFI_EVENT_STA_START) {
-            esp_wifi_connect();
+            wifiConnectAttempts = 1;
+            LOGI(LOG_TAG, "Attempting to connect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
+                esp_wifi_connect();
         } else if (event_id == WIFI_EVENT_STA_STOP) {
             // Do nothing
         } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
             // TODO: Throttle
-            if (wifiRetryCount < WIFI_MAX_RETRY) {
+            if (wifiConnectAttempts < WIFI_MAX_TRIES) {
+                ++wifiConnectAttempts;
+                LOGI(LOG_TAG, "Attempting to reconnect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
                 esp_wifi_connect();
-                ++wifiRetryCount;
             } else {
+                LOGE(LOG_TAG, "Unable to connect to WiFi.");
                 xEventGroupSetBits(wifiEventGroup, WIFI_FAIL_BIT);
             }
         }
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        wifiRetryCount = 0;
+        wifiConnectAttempts = 0;
+        LOGI(LOG_TAG, "Connected to WiFi.");
         xEventGroupSetBits(wifiEventGroup, WIFI_CONNECTED_BIT);
     }
 }
