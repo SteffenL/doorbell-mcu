@@ -10,6 +10,7 @@
 #define MAX_WAKEUP_INTERVAL_IN_US 6 * 60 * 60 * 1000000LL
 
 void delayMs(uint32_t time) { vTaskDelay(time / portTICK_PERIOD_MS); }
+void yield() { vTaskDelay(1); }
 
 void initSleep(uint64_t wakeupPinMask) {
     // Reduce deep sleep current
