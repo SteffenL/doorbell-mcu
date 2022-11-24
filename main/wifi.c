@@ -96,7 +96,7 @@ void startWifi(void) {
             &gotIpEventInstance));
     }
 
-    adc_power_on();
+    adc_power_acquire();
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 }
@@ -122,7 +122,7 @@ void stopWifi(void) {
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 
-    adc_power_off();
+    adc_power_release();
 }
 
 WifiWaitResult waitForWifiConnection(void) {
