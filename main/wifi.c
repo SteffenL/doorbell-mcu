@@ -27,7 +27,7 @@ void wifiEventHandler(
         if (event_id == WIFI_EVENT_STA_START) {
             wifiConnectAttempts = 1;
             LOGI(LOG_TAG, "Attempting to connect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
-                esp_wifi_connect();
+            esp_wifi_connect();
         } else if (event_id == WIFI_EVENT_STA_STOP) {
             // Do nothing
         } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
