@@ -26,7 +26,14 @@ void initSleep(uint64_t wakeupPinMask) {
 }
 
 bool wakeTriggeredByPin(uint8_t pin) {
-    return esp_sleep_get_ext1_wakeup_status() & (1ULL << pin);
+    // FIXME: Sometimes esp_sleep_get_ext1_wakeup_status() returns 0 even when
+    // the wakeup cause was ESP_SLEEP_WAKEUP_EXT1 which causes this function to
+    // incorrectly return false.
+    // esp_sleep_get_wakeup_cause() returns ESP_SLEEP_WAKEUP_EXT1 so for
+    // now just check the cause instead of the pin.
+    esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+    return cause == ESP_SLEEP_WAKEUP_EXT1;
+    //return esp_sleep_get_ext1_wakeup_status() & (1ULL << pin);
 }
 
 void lightSleepNow(void) {
