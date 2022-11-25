@@ -26,6 +26,7 @@ typedef struct {
     const char* serverUrl;
 } ApiClientContext;
 
+void ApiClient_setNetworkConnectHandler(esp_err_t (*handler)(void));
 esp_err_t ApiClient_ring(ApiClientContext* context);
 esp_err_t ApiClient_heartbeat(
     ApiClientContext* context,

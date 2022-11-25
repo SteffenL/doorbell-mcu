@@ -216,13 +216,7 @@ void handleOnDemandHeartbeatSequence(ApiClientContext* apiClientContext) {
         }
 
         startWifi();
-
-        if (waitForWifiConnection() == WIFI_WAIT_RESULT_OK) {
-            runHeartbeatTask(apiClientContext, true);
-        } else {
-            LOGE(LOG_TAG, "Unable to get a WiFi connection.");
-        }
-
+        runHeartbeatTask(apiClientContext, true);
         stopWifi();
     }
 }

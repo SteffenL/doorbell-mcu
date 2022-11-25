@@ -18,6 +18,14 @@ static ApiClientContext apiClientContext = {
 
 #define LOG_TAG  "main"
 
+esp_err_t networkConnectionHandler(void) {
+    if (waitForWifiConnection() == WIFI_WAIT_RESULT_OK) {
+        return ESP_OK;
+    }
+    LOGE(LOG_TAG, "Unable to establish a WiFi connection.");
+    return ESP_FAIL;
+}
+
 void setup(void) {
     NvsFlashStatus flashStatus = initFlash();
     LOGD(LOG_TAG, "NVS flash status: %d", flashStatus);
@@ -29,20 +37,17 @@ void setup(void) {
     initAdc();
     initWifi();
     runFirstTimeProvisioning();
+    ApiClient_setNetworkConnectHandler(networkConnectionHandler);
 }
 
 void loop(void) {
     bool wokenByRingButton = wakeTriggeredByPin(RING_BUTTON_PIN);
     startWifi();
 
-    if (waitForWifiConnection() == WIFI_WAIT_RESULT_OK) {
-        if (wokenByRingButton) {
-            runRingTasks(&apiClientContext);
-        } else {
-            runHeartbeatTask(&apiClientContext, false);
-        }
+    if (wokenByRingButton) {
+        runRingTasks(&apiClientContext);
     } else {
-        LOGE(LOG_TAG, "Cannot run tasks because there is no WiFi connection.");
+        runHeartbeatTask(&apiClientContext, false);
     }
 
     stopWifi();

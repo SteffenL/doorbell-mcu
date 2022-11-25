@@ -1,5 +1,6 @@
 #include "api.h"
 #include "adc.h"
+#include "esp_err.h"
 #include "log.h"
 #include "sleep.h"
 
@@ -15,6 +16,15 @@ static const char* API_CONTENT_TYPE = "application/flatmap";
 extern const uint8_t serverCertPemStart[] asm("_binary_server_cert_pem_start");
 extern const uint8_t serverCertPemEnd[] asm("_binary_server_cert_pem_end");
 
+static esp_err_t (*networkConnectHandler)(void) = NULL;
+
+esp_err_t invokeNetworkConnectHandler() {
+    if (networkConnectHandler) {
+        return networkConnectHandler();
+    }
+    return ESP_FAIL;
+}
+
 esp_err_t httpEventHandler(esp_http_client_event_t* evt) { return ESP_OK; }
 
 esp_err_t httpRequest(
@@ -26,6 +36,10 @@ esp_err_t httpRequest(
     char* responseBody,
     size_t responseBodySize,
     size_t* responseBodyBytesRead) {
+
+    if (invokeNetworkConnectHandler() != ESP_OK) {
+        return ESP_FAIL;
+    }
 
     esp_http_client_config_t config;
     memset(&config, 0, sizeof(esp_http_client_config_t));
@@ -184,6 +198,10 @@ void parseHeartbeatFlatmapCallback(
         response->updatePath[targetSize - 1] = 0;
         return;
     }
+}
+
+void ApiClient_setNetworkConnectHandler(esp_err_t (*handler)(void)) {
+    networkConnectHandler = handler;
 }
 
 esp_err_t ApiClient_request(
