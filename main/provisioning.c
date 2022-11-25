@@ -186,7 +186,6 @@ void runFirstTimeProvisioning(void) {
     case PROVISIONING_RESULT_COMPLETED:
         // Restarting after provisioning somehow reduces the time it takes to
         // establish subsequent WiFi connections.
-        stopWifi();
         esp_restart();
         break;
     default:
