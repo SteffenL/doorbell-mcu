@@ -30,7 +30,7 @@ void wifiEventHandler(
     if (event_base == WIFI_EVENT) {
         if (event_id == WIFI_EVENT_STA_START) {
             wifiConnectAttempts = 1;
-            LOGI(LOG_TAG, "Attempting to connect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
+            LOGD(LOG_TAG, "Attempting to connect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
             esp_wifi_connect();
         } else if (event_id == WIFI_EVENT_STA_STOP) {
             // Do nothing
@@ -38,7 +38,7 @@ void wifiEventHandler(
             // TODO: Throttle
             if (wifiConnectAttempts < WIFI_MAX_TRIES) {
                 ++wifiConnectAttempts;
-                LOGI(LOG_TAG, "Attempting to reconnect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
+                LOGD(LOG_TAG, "Attempting to reconnect to WiFi (%d/%d).", wifiConnectAttempts, WIFI_MAX_TRIES);
                 esp_wifi_connect();
             } else {
                 LOGE(LOG_TAG, "Unable to connect to WiFi.");
@@ -47,7 +47,7 @@ void wifiEventHandler(
         }
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         wifiConnectAttempts = 0;
-        LOGI(LOG_TAG, "Connected to WiFi.");
+        LOGD(LOG_TAG, "Connected to WiFi.");
         xEventGroupSetBits(wifiEventGroup, WIFI_CONNECTED_BIT);
     }
 }
