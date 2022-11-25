@@ -8,7 +8,7 @@
 #include <freertos/event_groups.h>
 
 #define LOG_TAG "wifi"
-#define WIFI_MAX_TRIES 5
+#define WIFI_MAX_TRIES 6
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 
