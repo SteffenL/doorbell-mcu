@@ -1,11 +1,13 @@
 #include "wifi.h"
 #include "log.h"
+#include "sleep.h"
 
 #include <driver/adc.h>
 #include <esp_event.h>
 #include <esp_timer.h>
 #include <esp_wifi.h>
 #include <freertos/event_groups.h>
+#include <stdatomic.h>
 
 #define LOG_TAG "wifi"
 #define WIFI_MAX_TRIES 6
@@ -16,6 +18,8 @@ static EventGroupHandle_t wifiEventGroup = NULL;
 static esp_event_handler_instance_t anyWifiEventInstance = NULL;
 static esp_event_handler_instance_t gotIpEventInstance = NULL;
 static uint8_t wifiConnectAttempts = 0;
+static atomic_int wifiConnectRefCount = 0;
+static atomic_int wifiLastConnectResult = WIFI_WAIT_RESULT_FAIL;
 
 void wifiEventHandler(
     void* event_handler_arg,
@@ -126,6 +130,14 @@ void stopWifi(void) {
 }
 
 WifiWaitResult waitForWifiConnection(void) {
+    ++wifiConnectRefCount;
+    if (wifiConnectRefCount > 1) {
+        LOGD(LOG_TAG, "Waiting for others to finish waiting for a WiFi connection.");
+        while (wifiConnectRefCount > 1) {
+            delayMs(1);
+        }
+        return wifiLastConnectResult;
+    }
     int64_t t1 = esp_timer_get_time();
     EventBits_t bits = xEventGroupWaitBits(
         wifiEventGroup, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdTRUE, pdFALSE,
@@ -136,5 +148,7 @@ WifiWaitResult waitForWifiConnection(void) {
         int64_t t2 = (esp_timer_get_time() - t1) / 1000;
         LOGD(LOG_TAG, "WiFi connected after %lld ms", t2);
     }
+    wifiLastConnectResult = result;
+    --wifiConnectRefCount;
     return result;
 }
