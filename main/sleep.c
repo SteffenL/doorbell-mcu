@@ -8,7 +8,7 @@
 #include <freertos/task.h>
 
 #define LOG_TAG "sleep"
-#define MAX_WAKEUP_INTERVAL_IN_US 6 * 60 * 60 * 1000000LL
+#define MAX_WAKEUP_INTERVAL_IN_US 1 * 60 * 60 * 1000000LL
 
 void delayMs(uint32_t time) { vTaskDelay(time / portTICK_PERIOD_MS); }
 void yield() { vTaskDelay(1); }
