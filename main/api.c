@@ -9,7 +9,7 @@
 
 #define LOG_TAG "api"
 
-static const int HTTP_TIMEOUT_IN_MS = 5000;
+static const int HTTP_TIMEOUT_IN_MS = 1000;
 // static const int HTTP_MAX_CONTENT_LENGTH = 65536;
 static const char* API_CONTENT_TYPE = "application/flatmap";
 
